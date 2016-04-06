@@ -1,0 +1,8 @@
+
+resetCoreTimer()
+while(1)
+{
+	printInt(readCoreTimer());
+	putChar('\n');
+}
+return 0
