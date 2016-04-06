@@ -62,9 +62,9 @@ int main(void)
 	_initADC_(ADCsamples);
 	EnableInterrupts();
 	int j = 0;
+	AD1CON1bits.ASAM = 1;
 	while(true)
 	{
-		AD1CON1bits.ASAM = 1;
 		send2SSD(segments[j],(j < 3 || j > 8) ? true : false );
 		delay(250*ADCvalue);
 		if(++j == 12)
@@ -84,5 +84,6 @@ void _int_(27) isr_adc(void)
 		ADCmean += *ADCpointer;
 	}
 	ADCvalue = (((ADCmean/ADCsamples) * 7) / 1023) + 1;
+	AD1CON1bits.ASAM = 1;
 	IFS1bits.AD1IF = 0;
 }
