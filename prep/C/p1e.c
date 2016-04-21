@@ -47,24 +47,35 @@ void _initADC_(uint nSamples)
 	IFS1bits.AD1IF = 0;
 }
 
-void send2SSD(uchar value,boolean high_display)
+void send2SSD(uchar value)
 {
-
-	LATB = ((LATB & 0xFC00) | (high_display ? 0x100 : 0x200) ) | value;
+	static uchar segments[]={0x00,a,a|b,a|b|c,a|b|c|d,a|b|c|d|e,a|b|c|d|e|f};
+	static boolean high_display = false;
+	value = (high_display ? value/7 : value%7);
+	LATB = ((LATB & 0xFC00) | (high_display ? 0x100 : 0x200) ) | segments[value];
+	high_display ^=1;
 }
 
 volatile uint ADCvalue = 0;
 
 int main(void)
 {
-	static uchar segments[]={0x00,a,a|b,a|b|c,a|b|c|d,a|b|c|d|e,a|b|c|d|e|f};
 	_init_();
 	_initADC_(ADCsamples);
 	EnableInterrupts();
 	AD1CON1bits.ASAM = 1;
+	
 	while(true)
 	{
-		send2SSD(segments[ADCvalue], false );
+		int counter = 0;
+		do{
+		delay(10);
+		if(++counter % 25 == 0)
+		{
+			AD1CON1bits.ASAM = 1;
+		}
+		send2SSD(ADCvalue);
+		}while(counter < 1000);
 	}
 
 	return 0;
@@ -79,7 +90,6 @@ void _int_(27) isr_adc(void)
 	{
 		ADCmean += *ADCpointer;
 	}
-	ADCvalue = (((ADCmean/ADCsamples) * 6) / 1023);
-	AD1CON1bits.ASAM = 1;
+	ADCvalue = (((ADCmean/ADCsamples) * 48) / 1023);
 	IFS1bits.AD1IF = 0;
 }

@@ -12,6 +12,7 @@ void _init_(uint nSamples)
 {	
 	init_adc14(nSamples);
 	TRISB &= 0xFC00;
+	TRISE &= 0xFFFF;
 	static uint preSclA[] = {1,2,64,256};
 	static uint preSclB[] = {1,2,4,8,16,32,64,256};
 	T1CONbits.TCKPS = preT1;
@@ -73,12 +74,16 @@ void _int_(12) isr_SSD(void)
 	IFS0bits.T3IF = 0;
 }
 
-
-
 int main(void)
 {
 	_init_(ADCSAMPLES);
 	EnableInterrupts();
-	while(true);
+	while(true)
+	{
+		if(((PORTE >> 4) & 0x3) == 1)
+			IEC0bits.T1IE = 0;
+		else
+			IEC0bits.T1IE = 1;
+	}
 	return 0;
 }
