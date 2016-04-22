@@ -34,7 +34,7 @@ void _init_(uint nSamples)
 	
 	OC1CONbits.OCM = 6;
 	OC1CONbits.OCTSEL = 1;
-	OC1RS = ((PR3+1) * dc) / 100;
+	OC1RS = 0;
 	OC1CONbits.ON = 1;
 }
 
