@@ -4,7 +4,7 @@
 #define FREQT3 100 	// SSD refresh rate
 #define preT1 3
 #define preT3 2
-#define ADCSAMPLES 4
+#define ADCSAMPLES 8
 
 volatile uint ADCvalue=0;
 
@@ -29,7 +29,12 @@ void _init_(uint nSamples)
 	T3CONbits.TON = 1;
 	IFS0bits.T3IF = 0;
 	IEC0bits.T3IE = 1;
-	IPC3bits.T3IP = 2;
+	IPC3bits.T3IP = 3;
+
+	IFS1bits.AD1IF = 0;
+	IEC1bits.AD1IE = 1;
+	IPC6bits.AD1IP = 2;
+
 }
 
 uchar toBCD(uchar character)
@@ -53,27 +58,6 @@ void send2SSD(uchar character)
 	high_display ^= 1;
 }
 
-void _int_(4) isr_adc(void)
-{
-	AD1CON1bits.ASAM = 1;
-	uint mean = 0;
-	uint *ADCPOINTER  = (uint*)&ADC1BUF0;
-	int j;
-	for(j=0; j < ADCSAMPLES; j++, ADCPOINTER = ADCPOINTER + 4)
-	{
-		mean += *ADCPOINTER;
-	}
-	 ADCvalue = ((mean / ADCSAMPLES)*33)/1023;
-	 IFS1bits.AD1IF = 0;
-	 IFS0bits.T1IF = 0;
-}
-
-void _int_(12) isr_SSD(void)
-{
-	send2SSD(toBCD(ADCvalue));
-	IFS0bits.T3IF = 0;
-}
-
 int main(void)
 {
 	_init_(ADCSAMPLES);
@@ -86,4 +70,29 @@ int main(void)
 			IEC0bits.T1IE = 1;
 	}
 	return 0;
+}
+
+void _int_(4) isr_T1(void)
+{
+	AD1CON1bits.ASAM = 1;
+	IFS0bits.T1IF = 0;
+}
+
+void _int_(12) isr_T3(void)
+{
+	send2SSD(toBCD(ADCvalue));
+	IFS0bits.T3IF = 0;
+}
+
+void _int_(27) isr_adc(void)
+{
+	uint mean = 0;
+	uint *ADCPOINTER  = (uint*)&ADC1BUF0;
+	int j;
+	for(j=0; j < ADCSAMPLES; j++, ADCPOINTER = ADCPOINTER + 4)
+	{
+		mean += *ADCPOINTER;
+	}
+	 ADCvalue = ((mean / ADCSAMPLES)*33)/1023;
+	 IFS1bits.AD1IF = 0;
 }
