@@ -158,11 +158,14 @@ uchar toBCD(uchar character)
 
 void voltagetoASCII(char *voltage, uint value)
 {
+	//fills char buffer with voltage in ASCII: "3.3V\n\0"
 	uchar adc_BCD = toBCD(value);
 	voltage[0] = (adc_BCD >> 4) + '0'; 
 	voltage[1] = '.';
 	voltage[2] = (adc_BCD & 0xF) + '0';
-	voltage[3] = '\0';
+	voltage[3] = 'V';
+	voltage[4] = '\n';
+	voltage[5] = '\0';
 }
 
 void send2SSD(uchar character)
@@ -183,24 +186,21 @@ void send2SSD(uchar character)
 
 void send2UART_adc()
 {
-	char v_buffer[4];
+	char v_buffer[6];
 	puts("Current voltage: ");
 	voltagetoASCII(v_buffer, ADCvalue);
 	puts(v_buffer);
-	puts("V\n");
 }
 
 void send2UART_maxmin()
 {
-	char v_buffer[4];
+	char v_buffer[6];
 	puts("Min Voltage: ");
 	voltagetoASCII(v_buffer, voltMin);
 	puts(v_buffer);
-	puts("V\n");
 	puts("Max Voltage: ");
 	voltagetoASCII(v_buffer, voltMax);
 	puts(v_buffer);
-	puts("V\n");
 }
 
 void setPWM(uint DutyCycle)
