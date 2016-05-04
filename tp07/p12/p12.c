@@ -12,6 +12,11 @@
 #define preT3 2
 #define ADCSAMPLES 8
 
+#define T1_IP 1
+#define T3_IP 4
+#define UART1_IP 2
+#define AD1_IP 3
+
 volatile uint ADCvalue = 0;
 volatile uint voltMin = 0x3FF;
 volatile uint voltMax = 0x0;
@@ -111,7 +116,7 @@ void configUart(uint baud, char parity, uint stopbits)
 	IFS0bits.U1RXIF = 0;
 	IEC0bits.U1RXIE = 1;
 	IEC0bits.U1EIE = 1;
-	IPC6bits.U1IP = 2;
+	IPC6bits.U1IP = UART1_IP;
 
 	UART1_PrintCfg(baud, parity, stopbits);
 }
@@ -131,7 +136,7 @@ void _init_(uint nSamples)
 	T1CONbits.TON = 1;
 	IFS0bits.T1IF = 0;
 	IEC0bits.T1IE = 1;
-	IPC1bits.T1IP = 4;
+	IPC1bits.T1IP = T1_IP;
 
 	T3CONbits.TCKPS = preT3;
 	PR3 = ((PBCLK/preSclB[preT3])/FREQT3)-1;
@@ -139,11 +144,11 @@ void _init_(uint nSamples)
 	T3CONbits.TON = 1;
 	IFS0bits.T3IF = 0;
 	IEC0bits.T3IE = 1;
-	IPC3bits.T3IP = 1;
+	IPC3bits.T3IP = T3_IP;
 
 	IFS1bits.AD1IF = 0;
 	IEC1bits.AD1IE = 1;
-	IPC6bits.AD1IP = 3;
+	IPC6bits.AD1IP = AD1_IP;
 
 	OC1CONbits.OCM = 6;
 	OC1CONbits.OCTSEL = 1;
@@ -266,7 +271,8 @@ void _int_(12) isr_T3(void)
 		if(++counter == 100)
 		{
 			counter = 0;
-			send2UART_adc();
+			if(U1STAbits.TRMT == 1)
+				send2UART_adc();
 		}
 	}
 	else
@@ -278,21 +284,25 @@ void _int_(24) isr_uart1(void)
 {
 	if(IFS0bits.U1EIF)
 	{
+		printStr("ERROR\n");
 		if(U1STAbits.OERR)
 			U1STAbits.OERR = 0;
 		else
 		{
-			U1RXREG;
-			IFS0bits.U1EIF = 0;
+			if((U1STA & 0xC) != 0)
+				U1RXREG;
+		}
+		IFS0bits.U1EIF = 0;
+	}
+	else if(IFS0bits.U1RXIF)
+	{	if(U1STAbits.TRMT == 1)
+		{
+			if(U1RXREG == 'L')
+				send2UART_maxmin();
 		}
 	}
-
-	if(IFS0bits.U1RXIF)
-	{	
-		if(U1RXREG == 'L')
-			send2UART_maxmin();
-		IFS0bits.U1RXIF = 0;
-	}
+	
+	IFS0bits.U1RXIF = 0;
 }
 
 void _int_(27) isr_adc(void)
