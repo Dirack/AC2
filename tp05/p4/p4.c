@@ -78,7 +78,6 @@ void _int_(27) isr_adc(void)
 	for(i = 0; i < ADC_samples; i++)
 	{
 		V_mean = V_mean + *ADCPointer;
-		ADCPointer++;
 		ADCPointer += 4;
 	}
 	ADC_value = ((V_mean/ADC_samples)*33)/1023;
