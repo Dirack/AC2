@@ -155,7 +155,7 @@ int main(void)
 	comDrv_puts("PIC32 UART Device-driver\n");
 	while(true)
 	{
-		volatile char c;
+		char c;
 		if(comDrv_getc(&c))
 			comDrv_putc(c);
 	}
