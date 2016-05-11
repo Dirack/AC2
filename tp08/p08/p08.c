@@ -67,6 +67,8 @@ char comDrv_getc(char *pchar)
 	*pchar = rxb.data[rxb.head];
 	rxb.count--;
 	rxb.head = (++rxb.head) & INDEX_MASK;
+	EnableUart1RxInterrupt();
+	return true;
 }
 
 char UART_decodeParity(char parity)
@@ -147,14 +149,15 @@ void comDrv_config(uint baud, char parity, uint stopbits)
 int main(void)
 {
 	comDrv_config(115200,'N',1);
+	EnableInterrupts();
 	comDrv_flushRx();
 	comDrv_flushTx();
-	EnableInterrupts();
-	
-	
+	comDrv_puts("PIC32 UART Device-driver\n");
 	while(true)
 	{
-		comDrv_puts("Pedro Rodrigues 71990\n");
+		volatile char c;
+		if(comDrv_getc(&c))
+			comDrv_putc(c);
 	}
 	return 0;
 }
@@ -174,6 +177,17 @@ void _int_(24) isr_uart1(void)
 			DisableUart1TxInterrupt();
 		}
 		IFS0bits.U1TXIF = 0;
+	}
+
+	if(IFS0bits.U1RXIF)
+	{
+		rxb.data[rxb.tail] = U1RXREG;
+		rxb.tail = (++rxb.tail) & INDEX_MASK;
+		if(rxb.count < BUF_SIZE)
+			rxb.count++;
+		else
+			rxb.head++;
+		IFS0bits.U1RXIF = 0;
 	}
 }
 
